@@ -1,0 +1,76 @@
+---
+title: 'Blog 1: Metrics of Simple Linear Regression in R'
+author: "Michael O'Donnell"
+date: "September 27, 2020"
+output:
+  html_document: default
+  pdf_document: default
+---
+
+The purpose of this blog is simply to define the metrics given to you in R from a Simple Linear Regression Model
+
+To look at a linear model in R, let's use help
+```{r help}
+help(lm)
+```
+
+Now, start by loading a dataset
+This dataset contains regular season data for all NBA teams from 2014-2018
+```{r load nba data}
+nbaData <- read.csv("data/nba_data.csv")
+colnames(nbaData)[1] <- "Team"
+
+head(nbaData, 3)
+```
+
+For this analysis, we model the relationship between Offensive Efficiency and WinPercentage
+Y: WinPercentage
+X: OffEff
+Let's start with a scatterplot
+```{r plot data}
+plot(nbaData$OffEff, nbaData$WinPercentage, main = "Scatterplot")
+```
+
+Let's quickly look at the correlation between the variables
+```{r cor}
+cor(nbaData$OffEff, nbaData$WinPercentage)
+```
+
+Build simple linear regression model
+(first variable in Y, second is x)
+```{r build SLR model}
+model <- lm(WinPercentage ~ OffEff, nbaData)
+model
+```
+
+Now, lets see a summary of the model
+```{r}
+summary(model)
+```
+
+From the summary above, let's define all the variables
+
+Residuals: the difference between the observed variables and the model variables. Here, you want symmetry and a median value around 0. We have that in this case! To take this further, you can plot the residuals to see if they're normally distributed
+
+Coefficients Estimate: these represent the model's intercept and slope terms. The intersection of Estimate and (Intercept) is the model's intercept. The intersection of Estimate and OffEff is the model's slope.
+
+Coefficients Std. Error: these measure the average amount the coeffiecient estimates vary from the observed variables. Ideally, we wan these low to show that the model is not much different from the observed data.
+
+Coefficient t value: how many standard deviations our coefficient estimate is from 0. The further this is from 0 the better chance there exists a relationship between the variables.
+
+Coefficient Pr(>|t|): the probability of observing any value >= t. A small p-value indicates unlikely relationship between predictor (OffEff) and response (WinPercentage). Typically, a p-value less than 5% is pretty good. You can see the ***'s line up to the sifniciance codes. We have a very small p-value in this example, which will allow us to reject the null hypothesis and conclude a relationship between OffEff and WinPercentage.
+
+Residual Standard Error: measure of quality of linear regression fit, how close on average is the abline to the data points? On average, our data points are within 0.1037 of our regression line. With 148 degrees of freedom, or data points that went into the estimation (data points - variables, 150 data points - 2 variables).
+
+Multiple R-squared: proportion of variance, how well is the model fitting the data? We have 53% is our model, so rougly 53% of the variance of WinPercentage can be explained by the OffEff.
+
+Adjusted R-squared: this metric controls against the increase in variables. So in Multiple Linear Regression with more than 1 variable, this metric is more important to compare with the multiple r-squared.
+
+F-statistic: different than t-tests, an f-test can measure multiple variables at once (the full model) to indicate a relationship among our predictors and response. Summary, the variance explained by the parameters in your model. First look at the p-value, if it is less than your significance value then you have sufficient evidence that your model fits the model better than without predictor variables. Hence, regject the null hypothesis.
+
+
+Now for fun, lets see the abline with the scatterplot
+```{r}
+plot(nbaData$OffEff, nbaData$WinPercentage)
+abline(model, col = 2)
+```
