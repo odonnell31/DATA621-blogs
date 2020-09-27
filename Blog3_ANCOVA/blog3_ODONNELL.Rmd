@@ -1,0 +1,54 @@
+---
+title: 'Blog 3: Running an ANOVA'
+author: "Michael O'Donnell"
+date: "September 28, 2020"
+output:
+  pdf_document: default
+  html_document: default
+---
+
+In Blog Two I explored the Multiple Linear Regression.
+Now, in this Blog I will dive into Multiple Regression with a categorical variable, an ANOVA. This will take measure a categorical variable's effect on the response variable.
+
+To look at an ANOVA in R, let's use help
+```{r help}
+help(aov)
+```
+
+Now, start by loading a dataset
+This dataset contains data for all NBA teams from 2014-2018
+```{r load nba data}
+nbaData <- read.csv("data/nba_data.csv")
+colnames(nbaData)[1] <- "Team"
+
+head(nbaData, 3)
+```
+
+For this analysis, we will test whether the Season (2014-2018) has any impact on Points in the Paint (PointsInPaint).
+Y: PointsInPaint
+X1: SeasonType
+
+Run an ANOVA
+(first variable in Y (response))
+```{r build ANOVA}
+model1 <- aov(PointsInPaint ~ Season, nbaData)
+
+summary(model1)
+```
+
+From the above summary, Season has a statistically significant impact on Points in the Paint. The p-value is far below the significance value of 0.05 and the F value is large.
+
+To view the descriptive statistics by Seaon, we can use the psych library:
+```{r}
+library(psych)
+describeBy(nbaData$PointsInPaint, nbaData$Season)
+```
+
+To visualize the data above, we can use ggplot to graph the Points in the Paint by Season
+```{r}
+library(ggplot2)
+
+ggplot(nbaData,aes(y=PointsInPaint, x=Season))+
+  stat_summary(fun="mean", geom="bar",position="dodge")+
+  stat_summary(fun.data = mean_se, geom = "errorbar", position="dodge",width=.8)
+```
