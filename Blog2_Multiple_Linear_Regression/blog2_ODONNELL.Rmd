@@ -1,0 +1,74 @@
+---
+title: 'Blog 2: dropping predictors in Multiple Linear Regression'
+author: "Michael O'Donnell"
+date: "September 27, 2020"
+output:
+  pdf_document: default
+  html_document: default
+---
+
+In Blog One I explored the metrics of Simple Linear Regression.
+Now, in this Blog I will dive into Multiple Linear Regression and determine how to drop predictor variables to achieve a higher .
+
+To look at a linear model in R, let's use help
+```{r help}
+help(lm)
+```
+
+Now, start by loading a dataset
+This dataset contains regular season data for all NBA teams from 2014-2018
+```{r load nba data}
+nbaData <- read.csv("data/nba_data.csv")
+colnames(nbaData)[1] <- "Team"
+
+head(nbaData, 3)
+```
+
+For this analysis, we model the relationship between Points Variables and WinPercentage
+Y: WinPercentage
+X1: Pts
+X2: FastBreakPts
+X3: PointsInPaint
+X4: PointsOffTO
+X5: SecondChancePts
+X6: ShootingFoulsDrawnPG
+
+Build simple linear regression model
+(first variable in Y (response))
+```{r build SLR model}
+model1 <- lm(WinPercentage ~ Pts + FastBreakPts + PointsInPaint +
+              PointsOffTO + SecondChancePTS + ShootingFoulsDrawnPG, nbaData)
+model1
+```
+
+Now, lets see a summary of the model
+```{r}
+summary(model1)
+```
+
+From the summary above, we can see that only 3 of the 6 predictor variables are less than our significance value of 0.05 (shown with *'s next to predictors)
+Also, the Adjusted R-squared of 0.318 is lower than we want.
+
+So, to determine how attain the best predictors for the model, we use the step function: 
+```{r step1}
+step(model1, test = "F")
+```
+
+From the step function, we can see the best AIC score is achieved with only 3 variables.
+Thus, lets create a second model with only the suggested variables:
+```{r create second model}
+model2 <- lm( WinPercentage ~ Pts + PointsInPaint + PointsOffTO, 
+    data = nbaData)
+
+summary(model2)
+```
+
+Now, the F-statistic is higher and the adjusted r-squared is a little higher.
+The p-value is below the significance value, but the model still doesn't look great.
+
+To diagnose some of the problems of the model, we can use diagnotic plots:
+```{r}
+plot(model2)
+```
+
+In future blog posts, we will dig into the diagnostic plots. For now, we know how to drop predictors from a model.
