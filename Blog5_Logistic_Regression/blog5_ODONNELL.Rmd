@@ -1,0 +1,60 @@
+---
+title: 'Blog 5: Logistic Regresssion'
+author: "Michael O'Donnell"
+date: "November 1, 2020"
+output:
+  pdf_document: default
+  html_document: default
+---
+
+In this Blog I will setup a simple Logistic Regression model on NBA data.
+
+Import Libraries
+```{r}
+# load required packages
+library(ggplot2)
+library(dplyr)
+library(corrplot)
+library(MASS)
+library(caret)
+library(RCurl)
+library(pROC)
+library(RCurl)
+library(haven)
+```
+
+Now, start by loading a dataset
+This dataset contains data for all NBA teams from 2014-2018
+```{r load nba data}
+nbaData <- read.csv("data/nba_data.csv")
+colnames(nbaData)[1] <- "Team"
+nbaData$WinningTeam <- nbaData$WinPercentage
+nbaData$WinningTeam[nbaData$WinningTeam > .5] <- 1
+nbaData$WinningTeam[nbaData$WinningTeam <= .5] <- 0
+
+#head(nbaData, 1)
+str(nbaData)
+```
+
+## Binary Logistic Regression
+```{r}
+all_preds = glm(WinningTeam ~ Pts+OppPts+Pace+OffEff+DefEff+FastBreakPts, family = binomial(), data = nbaData)
+summary(all_preds)
+nbaData$preds = ifelse(all_preds$fitted.values > 0.5, 1, 0)
+
+# look at confusion matrix
+cm = confusionMatrix(as_factor(nbaData$preds), as_factor(nbaData$WinningTeam), positive = "1")
+cm
+```
+
+Now, step through variables to find optimal model
+```{r}
+step_all_preds = stepAIC(all_preds)
+summary(step_all_preds)
+nbaData$preds = ifelse(step_all_preds$fitted.values > 0.5, 1, 0)
+
+# look at confusion matrix
+cm = confusionMatrix(as_factor(nbaData$preds), as_factor(nbaData$WinningTeam), positive = "1")
+cm
+```
+

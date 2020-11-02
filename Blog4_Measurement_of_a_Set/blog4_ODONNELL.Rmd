@@ -1,54 +1,110 @@
 ---
-title: 'Blog 3: Running an ANOVA'
+title: 'Blog 4: Measurements of a Set'
 author: "Michael O'Donnell"
-date: "September 28, 2020"
+date: "October 20, 2020"
 output:
   pdf_document: default
   html_document: default
 ---
 
-In Blog Two I explored the Multiple Linear Regression.
-Now, in this Blog I will dive into Multiple Regression with a categorical variable, an ANOVA. This will take measure a categorical variable's effect on the response variable.
-
-To look at an ANOVA in R, let's use help
-```{r help}
-help(aov)
-```
+In Blog Three I explored the ANOVA analysis.
+In this Blog I will dive into Measurements of a Set including accuracy, precision, recall, and F1 score.
 
 Now, start by loading a dataset
 This dataset contains data for all NBA teams from 2014-2018
 ```{r load nba data}
 nbaData <- read.csv("data/nba_data.csv")
 colnames(nbaData)[1] <- "Team"
+nbaData$WinningTeam <- nbaData$WinPercentage
+nbaData$WinningTeam[nbaData$WinningTeam > .5] <- 1
+nbaData$WinningTeam[nbaData$WinningTeam <= .5] <- 0
+nbaData$PositivePtsDiff <- nbaData$Pts - nbaData$OppPts
+nbaData$PositivePtsDiff[nbaData$PositivePtsDiff > 0] <- 1
+nbaData$PositivePtsDiff[nbaData$PositivePtsDiff <= 0] <- 0
 
-head(nbaData, 3)
+#head(nbaData, 1)
+str(nbaData)
 ```
 
-For this analysis, we will test whether the Season (2014-2018) has any impact on Points in the Paint (PointsInPaint).
-Y: PointsInPaint
-X1: SeasonType
-
-Run an ANOVA
-(first variable in Y (response))
-```{r build ANOVA}
-model1 <- aov(PointsInPaint ~ Season, nbaData)
-
-summary(model1)
+To look at measurements of a set, we will let our model assume that a positive points differential implies the team will be a winning team (>50% win percentage)
+```{r confusion matrix}
+# Loading the data
+table(nbaData$PositivePtsDiff, nbaData$WinningTeam)
 ```
 
-From the above summary, Season has a statistically significant impact on Points in the Paint. The p-value is far below the significance value of 0.05 and the F value is large.
 
-To view the descriptive statistics by Seaon, we can use the psych library:
-```{r}
-library(psych)
-describeBy(nbaData$PointsInPaint, nbaData$Season)
+First, a function to look at the accuracy of our model.
+Accuracy is the % of correct predictions out of all predictions.
+```{r accuracy}
+# write a function to calculate accuracy
+accuracy <- function(df) {
+  TruePositive <- nrow(df[df$PositivePtsDiff == 1 & df$WinningTeam == 1,])
+  TrueNegative <- nrow(df[df$PositivePtsDiff == 0 & df$WinningTeam == 0,])
+  FalsePositive <- nrow(df[df$PositivePtsDiff == 0 & df$WinningTeam == 1,])
+  FalseNegative <- nrow(df[df$PositivePtsDiff == 1 & df$WinningTeam == 0,])
+  
+  acc <- round((TruePositive+TrueNegative)/
+                 (TruePositive+TrueNegative+FalsePositive+FalseNegative), 3)
+  
+  return(acc)
+}
+
+accuracy(nbaData)
 ```
 
-To visualize the data above, we can use ggplot to graph the Points in the Paint by Season
-```{r}
-library(ggplot2)
+Second, a function to look at the precision of our model.
+Precision is the % of True Positives out of all Positive predictions.
+```{r precision}
+# write a function to calculate precision
+precision <- function(df) {
+  TruePositive <- nrow(df[df$PositivePtsDiff == 1 & df$WinningTeam == 1,])
+  TrueNegative <- nrow(df[df$PositivePtsDiff == 0 & df$WinningTeam == 0,])
+  FalsePositive <- nrow(df[df$PositivePtsDiff == 0 & df$WinningTeam == 1,])
+  FalseNegative <- nrow(df[df$PositivePtsDiff == 1 & df$WinningTeam == 0,])
+  
+  prec <- round((TruePositive)/(TruePositive+FalsePositive), 3)
+  
+  return(prec)
+}
 
-ggplot(nbaData,aes(y=PointsInPaint, x=Season))+
-  stat_summary(fun="mean", geom="bar",position="dodge")+
-  stat_summary(fun.data = mean_se, geom = "errorbar", position="dodge",width=.8)
+precision(nbaData)
 ```
+
+Third, a function to look at the recall of our model.
+Recall is the % of True Positives out of all True Positives and False Negative predictions.
+```{r recall}
+# write a function to calculate sensitivity
+recall <- function(df) {
+  TruePositive <- nrow(df[df$PositivePtsDiff == 1 & df$WinningTeam == 1,])
+  TrueNegative <- nrow(df[df$PositivePtsDiff == 0 & df$WinningTeam == 0,])
+  FalsePositive <- nrow(df[df$PositivePtsDiff == 0 & df$WinningTeam == 1,])
+  FalseNegative <- nrow(df[df$PositivePtsDiff == 1 & df$WinningTeam == 0,])
+  
+  sens <- round((TruePositive)/(TruePositive+FalseNegative), 3)
+  
+  return(sens)
+}
+
+recall(nbaData)
+```
+
+Last, a function to look at the F1 Score of our model.
+F1 Score is is blended metric of precision and recall
+```{r f_one_score}
+# write a function to calculate F1 Score
+f_one_score <- function(df) {
+  TruePositive <- nrow(df[df$PositivePtsDiff == 1 & df$WinningTeam == 1,])
+  TrueNegative <- nrow(df[df$PositivePtsDiff == 0 & df$WinningTeam == 0,])
+  FalsePositive <- nrow(df[df$PositivePtsDiff == 0 & df$WinningTeam == 1,])
+  FalseNegative <- nrow(df[df$PositivePtsDiff == 1 & df$WinningTeam == 0,])
+  
+  f_one <- round((2*precision(df)*recall(df))/
+                   (precision(df)+recall(df)), 3)
+  
+  return(f_one)
+}
+
+f_one_score(nbaData)
+```
+
+Overall, the accuracy, precision, recall, and F1 Score were all over 80%.
